@@ -1,0 +1,57 @@
+<head><script src="https://code.jquery.com/jquery-3.1.1.js"></script></head>
+<body style="background-color: #0d0d0d; color: #ffffff">
+	<script type="text/javascript">
+
+		updater = function(data){
+			for (let i in data){
+			if (data[i] == 'remove'){
+				$('#'+String(i)).remove();}
+
+			else {
+				for (let e in data[i]){
+					$('#'+String(i)+' '+'#'+String(e)).text(data[i][e]);
+
+					}
+				}
+			}
+		};
+
+		ssmgData = function(data){
+			for (let i in data){$('#'+String(i)+' '+'#'+'ssmg').append(data[i]) }
+			
+
+			
+				
+						
+		};
+
+
+		f = function() {$.getJSON( "http://127.0.0.1:8000/sofascore/update",updater)};
+		f2 = function() {$.getJSON( "http://127.0.0.1:8000/sofascore/preds_package",ssmgData)};
+		$(function () {setInterval(f, 20000) } );
+		$(function () {setInterval(f2, 50000) } );
+		setTimeout(window.location.reload.bind(window.location), 120000);
+	</script>
+<div>
+ <ul>
+    {% for event in eventList %}
+        <li id={{event.event_id}}><p>{{event.formatedStartDate}}
+        	<span>{{event.homeTeam_name}}</span>
+        	<span id='current_home'>{{event.current_home}}</span>
+        	<span id='period1_home'>{{event.period1_home}}</span>
+        	<span id='period2_home'>{{event.period2_home}}</span>
+        	<span id='period3_home'>{{event.period3_home}}</span>
+        	<span id='ssmg'>--------{{event.tennis_ssmg}}</span>
+       		</p>
+       		<p>---------------
+        	<span>{{event.awayTeam_name}}</span>
+        	<span id='current_away'>{{event.current_away}}</span>
+        	<span id='period1_away'>{{event.period1_away}}</span>
+        	<span id='period2_away'>{{event.period2_away}}</span>
+        	<span id='period3_away'>{{event.period3_away}}</span>
+       		</p>
+       		</li>
+    {% endfor %}
+</ul>
+</div>
+</body>
