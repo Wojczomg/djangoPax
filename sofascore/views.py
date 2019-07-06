@@ -3,7 +3,7 @@ from .scrapers import main_live, live_update
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.conf import settings
-from .models import LiveTable
+from .models import LiveTable, TennisHistory
 from .ssmgTransformers import * 
 import runpy
 
@@ -41,12 +41,17 @@ def update_package(request):
 	for i in update_list:
 
 		if i['status'] != 'inprogress':
+			# finished = TennisHistory(**qs.filter(event_id=i['event_id']).values()[0])
+			# finished.save()
+			TennisHistory.objects.update_or_create(defaults=qs.filter(event_id=i['event_id']).values(*columns_to_update)[0],
+				event_id=i['event_id'])
 			qs.get(event_id=i['event_id']).delete()
 			package[i['event_id']] = 'remove'
 			continue
 
-		current_state = qs.filter(event_id=i['event_id']).values(*columns_to_update)
+		current_state = qs.filter(event_id=i['event_id']).values(*columns_to_update)[0]
 		check = {k:v for k,v in i.items() if k in columns_to_update}
+		print(current_state,"DDDDDDD",check)
 		if current_state != check:
 			match = qs.filter(event_id=i['event_id'])
 			match.update(**check)
@@ -58,14 +63,15 @@ def update_package(request):
 	
 def preds_package(request):
 	qs = LiveTable.objects.all()
-	x = runpy.run_path(settings.BASE_DIR+'\\sofascore\\predictors.py',run_name='__main__')
+	x = runpy.run_path(settings.BASE_DIR+'\\sofascore\\predictors.py',run_name='__main__',
+		init_globals=globals())
 	package = {}
 	print(x.keys())
 	for i in qs:
 		if (i.odds_away and i.odds_home and (i.period2_away != 0 or i.period2_home != 0) and not i.tennis_ssmg):
 			arr=np.array([i.period1_home,i.period1_away,i.odds_home,i.odds_away])
 			print(x['tennis_ssmg'].predict_proba(([arr],[1,2,3]))[0][1])
-			i.tennis_ssmg = x['tennis_ssmg'].predict_proba(([arr],[1,2,3]))[0][1]
+			i.tennis_ssmg = round(x['tennis_ssmg'].predict_proba(([arr],[1,2,3]))[0][1],2)
 			i.save()
 			package[i.event_id] = i.tennis_ssmg
 	return JsonResponse(package)
